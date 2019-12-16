@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 public class PlayerMove : MonoBehaviour
 {
@@ -7,7 +8,7 @@ public class PlayerMove : MonoBehaviour
     public float movePower;
     public float jumpPower;
 
-    private Vector3 lastVelocity;
+    private Queue<Vector3> velocities;
 
     Animator anim;
 
@@ -17,8 +18,7 @@ public class PlayerMove : MonoBehaviour
         rigid = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         anim = GetComponent<Animator>();
-
-        lastVelocity = rigid.velocity;
+        velocities = new Queue<Vector3>(new List<Vector3>{ rigid.velocity, rigid.velocity});
     }
 
     // Update is called once per frame
@@ -50,11 +50,11 @@ public class PlayerMove : MonoBehaviour
 
         transform.position += moveVelocity * movePower * Time.deltaTime;
 
-        if(System.Math.Abs(rigid.velocity.y) < 0.01 && lastVelocity.y < 0f)
+        if(System.Math.Abs(rigid.velocity.y) < 0.01 && GetVectorValue())
         {
             anim.SetBool("isJumping", false);
         }
-        lastVelocity = rigid.velocity;
+        SetVectorValue(rigid.velocity);
     }
 
     void Jump()
@@ -80,5 +80,27 @@ public class PlayerMove : MonoBehaviour
             }
             Debug.Log(rayHit.distance);
         }
+    }
+
+    void SetVectorValue(Vector3 data)
+    {
+        velocities.Dequeue();
+        velocities.Enqueue(data);
+    }
+
+    bool GetVectorValue()
+    {
+        bool flag = true;
+
+        foreach(Vector3 en in velocities.ToArray())
+        {
+            if(System.Math.Abs(en.y) > 0.0001f)
+            {
+                flag = false;
+                break;
+            }
+        }
+
+        return flag;
     }
 }
