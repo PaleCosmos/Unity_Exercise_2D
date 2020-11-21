@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;//이벤트 핸들러 사용 using
 
@@ -7,9 +6,10 @@ public class JoyStick : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, I
 {
     public Camera camera;
     public GameObject Player;
+    public List<Rect> coliders;
     public Animator Animator_Player;
     public SpriteRenderer SpriteRenderer_Player;
-    public enum playerMovement {Idle, Walking, Attack }
+    public enum playerMovement { Idle, Walking, Attack }
     public playerMovement PlayerStatus = playerMovement.Idle;
     public Vector3 movement = Vector3.zero;
 
@@ -39,6 +39,11 @@ public class JoyStick : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, I
 
     private void Awake()
     {
+        foreach (var sp in GameObject.FindGameObjectsWithTag("COLIDER_INIT"))
+        {
+            coliders.Add(GetWorldSapceRect(sp.GetComponent<RectTransform>()));
+        }
+
         Animator_Player = Player.GetComponent<Animator>();
         SpriteRenderer_Player = Player.GetComponent<SpriteRenderer>();
         Init();//초기화
@@ -46,16 +51,43 @@ public class JoyStick : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, I
 
     void FixedUpdate()
     {
-        if(PlayerStatus == playerMovement.Walking)
+        if (PlayerStatus == playerMovement.Walking)
         {
-            Player.transform.Translate(movement);
-            camera.transform.Translate(movement);
+            Player.transform.Translate(movement.x, 0, 0);
+            camera.transform.Translate(movement.x, 0, 0);
+
+            foreach (var sp in coliders)
+            {
+                if (sp.Contains(Player.transform.position))
+                {
+
+                    Player.transform.Translate(-movement.x, 0, 0);
+                    camera.transform.Translate(-movement.x, 0, 0);
+                    break;
+                }
+            }
+
+            Player.transform.Translate(0, movement.y, 0);
+            camera.transform.Translate(0, movement.y, 0);
+
+            foreach (var sp in coliders)
+            {
+                if (sp.Contains(Player.transform.position))
+                {
+
+                    Player.transform.Translate(0, -movement.y, 0);
+                    camera.transform.Translate(0, -movement.y, 0);
+                    break;
+                }
+            }
+
         }
     }
 
+
     void Update()
     {
-        switch(PlayerStatus)
+        switch (PlayerStatus)
         {
             case playerMovement.Walking:
                 SpriteRenderer_Player.flipX = movement.x < 0;
@@ -72,7 +104,7 @@ public class JoyStick : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, I
     #region event
     public void OnPointerClick(PointerEventData eventData)
     {
-     
+
     }
 
     public void OnPointerDown(PointerEventData eventData)
@@ -147,4 +179,11 @@ public class JoyStick : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, I
         m_ePrevEvent = _handle;
     }
 
+    Rect GetWorldSapceRect(RectTransform rt)
+    {
+        var r = rt.rect;
+        r.center = rt.TransformPoint(r.center);
+        r.size = rt.TransformVector(r.size);
+        return r;
+    }
 }
